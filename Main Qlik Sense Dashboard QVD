@@ -1,0 +1,166 @@
+
+[PURCHASE_ORDER_LINE_PART2]:
+LOAD 	ORDER_NO,
+		XPART_NO,
+ 		TOTA/BC as TT,
+        BC
+         
+        
+        ;
+
+SELECT 			p.ORDER_NO as ORDER_NO,
+				p.PART_NO as XPART_NO,
+                s.TOTA as TOTA,
+                a.bc as BC
+                
+
+FROM (SELECT 			ORDER_NO ,
+				
+                sum(BUY_QTY_DUE * FBUY_UNIT_PRICE ) as TOTA
+          from       IFSAPP.PURCHASE_ORDER_LINE_PART 
+        group by ORDER_NO)   s  ,  
+        
+        ( select order_no,sum(BUY_QTY_DUE) as bc 
+        from IFSAPP.PURCHASE_ORDER_LINE_PART 
+        where part_no not like 'D-PRSU%'
+         group by  order_no) a,
+         IFSAPP.PURCHASE_ORDER_LINE_PART p
+where a.order_no=p.order_no and
+s.order_no=p.order_no and p.PART_NO not like 'D-PRSU%'
+and p.STATE <> 'Cancelled';
+
+
+
+[PURCHASE_ORDER_LINE_PART1]:
+LOAD 	ORDER_NO,
+		PART_NO,
+        PART_NAME,
+ 		BUY_QTY_DUE,
+        FBUY_UNIT_PRICE,
+        BUY_UNIT_PRICE,
+        PRICE_CONV_FACTOR,
+        STATE
+        
+        ;
+
+SELECT 			p."ORDER_NO" as "ORDER_NO",
+				p."PART_NO" as "PART_NO",
+                 p."DESCRIPTION" as "PART_NAME",
+                p.BUY_QTY_DUE,
+                p.FBUY_UNIT_PRICE,
+                p.BUY_UNIT_PRICE,
+                p.PRICE_CONV_FACTOR,
+                p.STATE
+                
+                
+               
+                
+FROM "IFSAPP"."PURCHASE_ORDER_LINE_PART" p
+where p.STATE <> 'Cancelled'
+;
+
+[PURCHASE_ORDER_LINE_PART]:
+LOAD 	ORDER_NO,
+		PART_NO,
+ 		CHARGE_TYPE,
+     	CHARGE_AMOUNT,
+        CONNECT_TO_LINE_NO
+        ;
+
+SELECT  		p."ORDER_NO" as "ORDER_NO",
+				 p."PART_NO" as "PART_NO",
+                c."CHARGE_TYPE",
+       			c."CHARGE_AMOUNT",
+                c.CONNECT_TO_LINE_NO
+
+FROM "IFSAPP"."PURCHASE_ORDER_LINE_PART" p,
+"IFSAPP"."PURCHASE_ORDER_CHARGE" c
+where  p.ORDER_NO=c.ORDER_NO and p.LINE_NO=c.CONNECT_TO_LINE_NO
+and
+c.CONNECT_TO_LINE_NO is not null and
+ p.STATE <> 'Cancelled';
+
+
+[PURCHASE_ORDER_CHARGE_OTHER]:
+LOAD ORDER_NO,
+      PART_NO,
+     YCHARGETYPE,
+     YCHARGEAMOUNT,
+     CONNECT_TO_LINE_NO,
+     YTOTAL,
+ 	 YXFBUY_UNIT_PRICE,
+     YXLBUY_UNIT_PRICE,
+     YXBUY_QTY_DUE
+
+    ;
+
+     
+     
+select      x.XORDERNO AS ORDER_NO,
+		    x.XPARTNO AS PART_NO,
+            x.XCHARGETYPE AS YCHARGETYPE,
+            x.XCHARGE_AMOUNT AS YCHARGEAMOUNT,
+            x.XCONNECT_TO_LINE_NO as CONNECT_TO_LINE_NO,
+            x.XYTOTAL AS YTOTAL,
+            x.XFBUY_UNIT_PRICE AS YXFBUY_UNIT_PRICE,
+            x.XLBUY_UNIT_PRICE as YXLBUY_UNIT_PRICE,
+            x.XBUY_QTY_DUE AS YXBUY_QTY_DUE
+
+        
+from 	(select b.CHARGE_TYPE as XCHARGETYPE,
+                        a.ORDERNO as XORDERNO,
+                        a.PARTNO as XPARTNO,
+                        a.YTOTAL as XYTOTAL,
+                        b.CHARGE_AMOUNT as XCHARGE_AMOUNT,
+                        b.CONNECT_TO_LINE_NO as XCONNECT_TO_LINE_NO,
+                        a.FBUY_UNIT_PRICE as XFBUY_UNIT_PRICE,
+                        a.LBUY_UNIT_PRICE as XLBUY_UNIT_PRICE,
+                        a.BUY_QTY_DUE as XBUY_QTY_DUE
+                from        (select f.fORDERNO as ORDERNO,
+                                            p.PART_NO as PARTNO,
+                                            f.TotalPrice as YTOTAL,
+                                            p.FBUY_UNIT_PRICE as FBUY_UNIT_PRICE ,
+                                            p.BUY_UNIT_PRICE as LBUY_UNIT_PRICE,
+                                            p.BUY_QTY_DUE as BUY_QTY_DUE
+                                 from       (select ORDER_NO as fORDERNO,
+                                                            sum(FBUY_UNIT_PRICE * BUY_QTY_DUE) as TotalPrice 
+                                                 from IFSAPP.PURCHASE_ORDER_LINE_PART 
+                                                 where STATE <> 'Cancelled'
+                                                 group by ORDER_NO ) f,
+                                IFSAPP.PURCHASE_ORDER_LINE_PART p
+                                 where f.fORDERNO=p.ORDER_NO ) a,
+             IFSAPP.PURCHASE_ORDER_CHARGE b
+             where a.ORDERNO=b.ORDER_NO 
+             and  b.CONNECT_TO_LINE_NO is  null
+            ) x;
+            
+ 
+
+ [GEN_LED_VOUCHER_ROW_UNION_QRY]:
+ 
+ Load
+	ORDER_NO,
+    AMOUNT,
+    TEXT,
+    CODE_E
+    ;
+ select CODE_I as ORDER_NO,TEXT,AMOUNT,CODE_E,CODE_E_DESC from IFSAPP.GEN_LED_VOUCHER_ROW_UNION_QRY
+ where ACCOUNT = '1351003' ;
+ 
+ [INVENTORY_DETAILS]:
+ 
+ LOAD PART_NO,
+ 	  LATEST_PURCHASE_PRICE,
+      ESTIMATED_MATERIAL_COST
+      ;
+ select part_no,LATEST_PURCHASE_PRICE,ESTIMATED_MATERIAL_COST 
+ from INVENTORY_PART_CONFIG
+where contract='DSI1'
+ 
+ 
+ 
+
+
+
+
+
